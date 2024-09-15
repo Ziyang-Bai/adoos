@@ -1,52 +1,62 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from moviepy.editor import AudioFileClip, ImageSequenceClip
+from pydub import AudioSegment
+import os
 
-# 生成音频波形图
 def generate_waveform(audio_path, num_frames=1000, output_dir="frames"):
-    audio = AudioFileClip(audio_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Load the audio file with pydub
+    audio = AudioSegment.from_file(audio_path)
     
-    # 提取音频数据
-    audio_data = audio.to_soundarray(fps=44100)
+    # Convert audio to numpy array
+    audio_data = np.array(audio.get_array_of_samples())
     
-    # 生成波形图
+    # Handle stereo to mono conversion if necessary
+    if audio.channels > 1:
+        audio_data = audio_data.reshape(-1, audio.channels).mean(axis=1)
+    
+    # Normalize audio data
+    audio_data = audio_data / np.max(np.abs(audio_data))
+    
+    # Generate waveform images
     for i in range(num_frames):
         plt.figure(figsize=(10, 4))
+        
+        # Calculate frame segments for each chunk
         start_frame = int(i * len(audio_data) / num_frames)
         end_frame = int((i + 1) * len(audio_data) / num_frames)
         audio_segment = audio_data[start_frame:end_frame]
         
         plt.plot(audio_segment)
-        plt.title(f"Frame {i+1}")
         plt.ylim([-1, 1])
         plt.axis('off')
         
-        # 保存每一帧波形图
+        # Save the plot as an image file
         plt.savefig(f"{output_dir}/frame_{i:04d}.png", bbox_inches='tight', pad_inches=0)
         plt.close()
     
     return output_dir
 
-# 将生成的波形图合成为MP4视频
 def create_waveform_video(audio_path, output_mp4="output.mp4"):
-    # 生成波形图并存储为图像帧
     frames_dir = generate_waveform(audio_path)
-    
-    # 提取音频
     audio_clip = AudioFileClip(audio_path)
     
-    # 加载所有生成的帧图像
-    frames = [f"{frames_dir}/frame_{i:04d}.png" for i in range(1000)]
+    # Ensure correct frame count and fps for the video
+    num_frames = 1000
+    frames = [f"{frames_dir}/frame_{i:04d}.png" for i in range(num_frames)]
     
-    # 生成视频
-    video_clip = ImageSequenceClip(frames, fps=30)
+    # Create the video from the frames
+    video_clip = ImageSequenceClip(frames, fps=num_frames / audio_clip.duration)
     
-    # 将音频添加到视频中
+    # Combine video with audio
     video_with_audio = video_clip.set_audio(audio_clip)
     
-    # 导出为MP4文件
+    # Write the video to the output file
     video_with_audio.write_videofile(output_mp4, codec="libx264")
 
 if __name__ == "__main__":
-    mp3_file = "your_audio_file.mp3"  # 输入的MP3文件
+    mp3_file = "input.mp3"
     create_waveform_video(mp3_file, output_mp4="output.mp4")
