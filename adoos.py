@@ -88,5 +88,5 @@ def create_waveform_video(audio_path, output_mp4="output.mp4"):
     video_with_audio.write_videofile(output_mp4, codec="libx264")
 
 if __name__ == "__main__":
-    mp3_file = "input.wav"
+    mp3_file = "input.mp3"
     create_waveform_video(mp3_file, output_mp4="output.mp4")
