@@ -9,24 +9,39 @@ def load_config(file_path):
     tree = ET.parse(file_path)
     root = tree.getroot()
     config = {
-        'SAMPLERATE': int(root.find('SAMPLERATE').text),
-        'DURATION': float(root.find('DURATION').text),
-        'UPDATE_INTERVAL': int(root.find('UPDATE_INTERVAL').text),
-        'FREQUENCY': float(root.find('FREQUENCY').text),
-        'DEBUGGER_SINE': root.find('DEBUGGER_SINE').text.lower() == 'true',
-        'GRAPH': {
-            'YMIN': float(root.find('GRAPH/YMIN').text),
-            'YMAX': float(root.find('GRAPH/YMAX').text),
-            'TIME_WINDOW': float(root.find('GRAPH/TIME_WINDOW').text),
-            'BACKGROUND_COLOR': root.find('GRAPH/BACKGROUND_COLOR').text,
-            'SHOW_AXIS': root.find('GRAPH/SHOW_AXIS').text.lower() == 'true',
-        }
-    }
+    'SAMPLERATE': int(root.find('SAMPLERATE').text),
+    'DURATION': float(root.find('DURATION').text),
+    'UPDATE_INTERVAL': int(root.find('UPDATE_INTERVAL').text),
+    'FREQUENCY': float(root.find('FREQUENCY').text),
+    'DEBUGGER_SINE': root.find('DEBUGGER_SINE').text.lower() == 'true',
+    'GRAPH': {
+        'YMIN': float(root.find('GRAPH/YMIN').text),
+        'YMAX': float(root.find('GRAPH/YMAX').text),
+        'TIME_WINDOW': float(root.find('GRAPH/TIME_WINDOW').text),
+        'BACKGROUND_COLOR': root.find('GRAPH/BACKGROUND_COLOR').text,
+        'SHOW_AXIS': root.find('GRAPH/SHOW_AXIS').text.lower() == 'true',
+    },
+    'MOTD': root.find('MOTD').text
+}
+
     return config
+def load_prop(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    prop_element = root.find('prop')
+    if prop_element is not None:
+        prop_config = {
+            'version': prop_element.find('version').text,
+            'author': prop_element.find('author').text,
+            'res': prop_element.find('res').text
+        }
+        return prop_config
+    else:
+        raise ValueError("No <prop> element found in the XML file")
 
 # 加载配置
 config = load_config("config.xml")
-
+prop = load_prop("config.xml")
 # 使用配置中的参数
 SAMPLERATE = config['SAMPLERATE']
 DURATION = config['DURATION']
@@ -34,7 +49,10 @@ UPDATE_INTERVAL = config['UPDATE_INTERVAL']
 FREQUENCY = config['FREQUENCY']
 debugger_sine = config['DEBUGGER_SINE']
 GRAPH_CONFIG = config['GRAPH']
-
+MOTD = config['MOTD']
+version = prop['version']
+author = prop['author']
+res = prop['res']
 # 初始化图形
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.set_ylim([GRAPH_CONFIG['YMIN'], GRAPH_CONFIG['YMAX']])  # 设置Y轴范围
@@ -76,4 +94,8 @@ def start_audio_stream():
         plt.show()
 
 if __name__ == "__main__":
+    print(MOTD)
+    print('Version: ' + version)
+    print('Author: ' + author)
+    print('Repository: ' + res)
     start_audio_stream()
