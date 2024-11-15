@@ -2,26 +2,51 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import sounddevice as sd
+import xml.etree.ElementTree as ET
 
-# 设置参数
-SAMPLERATE = 44100  # 采样率（每秒采样的点数）
-DURATION = 1  # 每次捕获的时长（秒）
-UPDATE_INTERVAL = 50  # 动画更新的时间间隔（毫秒）
-FREQUENCY = 440  # 正弦波频率（Hz）
+# 读取XML配置
+def load_config(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    config = {
+        'SAMPLERATE': int(root.find('SAMPLERATE').text),
+        'DURATION': float(root.find('DURATION').text),
+        'UPDATE_INTERVAL': int(root.find('UPDATE_INTERVAL').text),
+        'FREQUENCY': float(root.find('FREQUENCY').text),
+        'DEBUGGER_SINE': root.find('DEBUGGER_SINE').text.lower() == 'true',
+        'GRAPH': {
+            'YMIN': float(root.find('GRAPH/YMIN').text),
+            'YMAX': float(root.find('GRAPH/YMAX').text),
+            'TIME_WINDOW': float(root.find('GRAPH/TIME_WINDOW').text),
+            'BACKGROUND_COLOR': root.find('GRAPH/BACKGROUND_COLOR').text,
+            'SHOW_AXIS': root.find('GRAPH/SHOW_AXIS').text.lower() == 'true',
+        }
+    }
+    return config
 
-# 控制是否显示正弦波（True 为显示正弦波，False 为显示麦克风音频波形）
-debugger_sine = False
+# 加载配置
+config = load_config("config.xml")
+
+# 使用配置中的参数
+SAMPLERATE = config['SAMPLERATE']
+DURATION = config['DURATION']
+UPDATE_INTERVAL = config['UPDATE_INTERVAL']
+FREQUENCY = config['FREQUENCY']
+debugger_sine = config['DEBUGGER_SINE']
+GRAPH_CONFIG = config['GRAPH']
 
 # 初始化图形
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.set_ylim([-1.5, 1.5])  # 调整Y轴范围，以便看到更清晰的波形
-ax.set_xlim([0, SAMPLERATE])  # 显示1秒钟的数据
+ax.set_ylim([GRAPH_CONFIG['YMIN'], GRAPH_CONFIG['YMAX']])  # 设置Y轴范围
+ax.set_xlim([0, SAMPLERATE * GRAPH_CONFIG['TIME_WINDOW']])  # 设置X轴范围
+ax.set_facecolor(GRAPH_CONFIG['BACKGROUND_COLOR'])  # 设置背景颜色
+if not GRAPH_CONFIG['SHOW_AXIS']:
+    ax.axis('off')  # 关闭坐标轴
 line, = ax.plot([], [], lw=2)
-ax.set_facecolor('black')
-ax.axis('off')  # 关闭坐标轴
 
 # 音频数据缓存
-audio_data = np.zeros(SAMPLERATE)
+buffer_size = int(SAMPLERATE * GRAPH_CONFIG['TIME_WINDOW'])  # 根据时间窗大小调整缓存
+audio_data = np.zeros(buffer_size)
 
 # 创建正弦波
 t = np.linspace(0, DURATION, SAMPLERATE, endpoint=False)
@@ -31,13 +56,12 @@ sine_wave = np.sin(2 * np.pi * FREQUENCY * t)
 def audio_callback(indata, frames, time, status):
     if status:
         print(status)
-    # 获取输入数据，并更新缓存
+    # 更新缓存数据
     audio_data[:-frames] = audio_data[frames:]
     audio_data[-frames:] = indata[:, 0]
 
-# 用于更新绘图的函数
+# 更新绘图函数
 def update_plot(frame):
-    # 根据debugger_sine的值来选择绘制正弦波或麦克风数据
     if debugger_sine:
         line.set_ydata(sine_wave)  # 显示正弦波
     else:

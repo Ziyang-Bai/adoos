@@ -1,0 +1,14 @@
+<config>
+    <SAMPLERATE>44100</SAMPLERATE>
+    <DURATION>1</DURATION>
+    <UPDATE_INTERVAL>50</UPDATE_INTERVAL>
+    <FREQUENCY>440</FREQUENCY>
+    <DEBUGGER_SINE>false</DEBUGGER_SINE>
+    <GRAPH>
+        <YMIN>-1.5</YMIN> <!-- Y轴最小值 -->
+        <YMAX>1.5</YMAX>  <!-- Y轴最大值 -->
+        <TIME_WINDOW>1</TIME_WINDOW> <!-- X轴显示的时间窗（秒） -->
+        <BACKGROUND_COLOR>black</BACKGROUND_COLOR> <!-- 背景颜色 -->
+        <SHOW_AXIS>false</SHOW_AXIS> <!-- 是否显示坐标轴 -->
+    </GRAPH>
+</config>
